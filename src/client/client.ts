@@ -4,7 +4,6 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader';
 import { GUI } from 'dat.gui';
-import { Object3D } from 'three';
 
 let envManager = new EnvironmentManager();
 let scene = envManager.scene;
@@ -13,8 +12,8 @@ let camera = envManager.camera;
 
 let lights: THREE.PointLight[] = [];
 
-for (let i = 0; i < 3; i++) {
-  const light = new THREE.PointLight(0xdffff0, 3);
+for (let i = 0; i < 2; i++) {
+  const light = new THREE.PointLight(0xdffff0, 4);
   light.castShadow = true;
   light.shadow.bias = -0.003;
   light.shadow.mapSize.height = 2048;
@@ -25,13 +24,13 @@ for (let i = 0; i < 3; i++) {
   lights.push(light);
 }
 
-let lightx = 800,
+let lightx = 1000,
   lighty = 800,
   lightz = 800;
-// lights[0].intensity = 1;
+lights[0].intensity = 1.5;
 lights[0].position.set(0, 180, 0);
-lights[1].position.set(-lightx, lighty / 4, 0);
-lights[2].position.set(lightx, lighty / 2, 0);
+// lights[1].position.set(-lightx, lighty / 4, 0);
+lights[1].position.set(lightx, lighty / 2, 0);
 // lights[0].intensity = 2;
 // lights[1].intensity = 2;
 
@@ -58,12 +57,17 @@ spotLights[1].position.set(0, 200, -400);
 
 let lightToggle = {
   lightsOn: true,
+  addWindows: false,
 };
 const gui = new GUI();
 gui
   .add(lightToggle, 'lightsOn')
   .name('Its morning')
   .onChange(() => toggleLights());
+gui
+  .add(lightToggle, 'addWindows')
+  .name('Close windows')
+  .onChange(() => toggleWindows());
 gui.open();
 
 function toggleLights(): void {
@@ -73,6 +77,11 @@ function toggleLights(): void {
   } else {
     lights.forEach((item) => scene.remove(scene.getObjectById(item.id)!));
     spotLights.forEach((item) => scene.add(item));
+  }
+}
+function toggleWindows() {
+  if (objects[3]) {
+    objects[3].visible = !objects[3].visible;
   }
 }
 
@@ -193,11 +202,7 @@ function animate() {
 
   if (item && !itemUpdated) {
     itemUpdated = true;
-    const material = item.material as THREE.MeshStandardMaterial;
-    material.opacity = 0.5;
-    material.transparent = true;
-    material.side = THREE.DoubleSide;
-    material.needsUpdate = true;
+    item.visible = false;
 
     const mat = objects[1].material as THREE.MeshStandardMaterial;
     // mat.onBeforeCompile(() => {}, renderer);
