@@ -3,7 +3,8 @@ import { EnvironmentManager } from './EnvironmentManager';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader';
-import { OBB } from 'three/examples/jsm/math/OBB';
+import { GUI } from 'dat.gui';
+import { Object3D } from 'three';
 
 let envManager = new EnvironmentManager();
 let scene = envManager.scene;
@@ -13,28 +14,71 @@ let camera = envManager.camera;
 let lights: THREE.PointLight[] = [];
 
 for (let i = 0; i < 3; i++) {
-  const light = new THREE.PointLight(0xffffff, 1);
+  const light = new THREE.PointLight(0xdffff0, 3);
   light.castShadow = true;
   light.shadow.bias = -0.003;
-  light.shadow.mapSize.height = 512;
-  light.shadow.mapSize.width = 512;
-  light.shadow.camera.near = 0.1;
+  light.shadow.mapSize.height = 2048;
+  light.shadow.mapSize.width = 2048;
+  light.shadow.camera.near = 0.5;
   light.shadow.camera.far = 2000;
   scene.add(light);
   lights.push(light);
 }
 
-lights[0].position.set(0, 180, 0);
-lights[0].intensity = 2;
-lights[1].intensity = 1.2;
-
-// lights[0].decay = 1;
-// scene.remove(lights[0]);
 let lightx = 800,
   lighty = 800,
   lightz = 800;
-lights[1].position.set(-lightx, lighty, 0);
-lights[2].position.set(-lightx, lighty, 0);
+// lights[0].intensity = 1;
+lights[0].position.set(0, 180, 0);
+lights[1].position.set(-lightx, lighty / 4, 0);
+lights[2].position.set(lightx, lighty / 2, 0);
+// lights[0].intensity = 2;
+// lights[1].intensity = 2;
+
+let spotLights: THREE.SpotLight[] = [];
+for (let i = 0; i < 2; i++) {
+  const light = new THREE.SpotLight(i % 2 ? 0xffff10 : 0x10ffff, 3, 1000, 1, 0);
+  light.castShadow = true;
+  light.shadow.bias = -0.003;
+  light.shadow.mapSize.height = 2048;
+  light.shadow.mapSize.width = 2048;
+  light.shadow.camera.near = 0.1;
+  light.shadow.camera.far = 2000;
+  // scene.add(light);
+  spotLights.push(light);
+
+  let spotTarget = new THREE.Object3D();
+  spotTarget.position.set(0, 0, 0);
+  scene.add(spotTarget);
+  light.target = spotTarget;
+}
+
+spotLights[0].position.set(0, 200, 400);
+spotLights[1].position.set(0, 200, -400);
+
+let lightToggle = {
+  lightsOn: true,
+};
+const gui = new GUI();
+gui
+  .add(lightToggle, 'lightsOn')
+  .name('Its morning')
+  .onChange(() => toggleLights());
+gui.open();
+
+function toggleLights(): void {
+  if (lightToggle.lightsOn) {
+    lights.forEach((item) => scene.add(item));
+    spotLights.forEach((item) => scene.remove(scene.getObjectById(item.id)!));
+  } else {
+    lights.forEach((item) => scene.remove(scene.getObjectById(item.id)!));
+    spotLights.forEach((item) => scene.add(item));
+  }
+}
+
+// lights[0].decay = 1;
+// scene.remove(lights[0]);
+
 // lights[3].position.set(0, lighty, lightz);
 // lights[4].position.set(0, lighty, -lightz);
 
@@ -82,7 +126,6 @@ loader.load(
         const mat = m.material as THREE.MeshStandardMaterial;
         mat.roughness = 2;
         mat.metalness = 0;
-
         mat.needsUpdate = true;
         // }
       }
@@ -129,10 +172,11 @@ let sphereMesh = new THREE.Mesh(geo, mat1);
 sphereMesh.castShadow = true;
 sphereMesh.receiveShadow = true;
 
-scene.add(sphereMesh);
-sphereMesh.position.set(0, 150, 0);
 let velocity = 1;
 // scene.add(cubeCamera);
+let init = 200;
+let dir = -1;
+let theta = 0;
 function animate() {
   requestAnimationFrame(animate);
   controls.update();
@@ -157,23 +201,55 @@ function animate() {
 
     const mat = objects[1].material as THREE.MeshStandardMaterial;
     // mat.onBeforeCompile(() => {}, renderer);
+    // mat.onBeforeCompile = function (shader) {
+    //   //these parameters are for the cubeCamera texture
+    //   shader.uniforms.cubeMapSize = { value: new THREE.Vector3(100, 100, 100) };
+    //   shader.uniforms.cubeMapPos = { value: new THREE.Vector3(0, 100, 0) };
+
+    //   //replace shader chunks with box projection chunks
+    //   shader.vertexShader =
+    //     'varying vec3 vWorldPosition;\n' + shader.vertexShader;
+
+    //   shader.vertexShader = shader.vertexShader.replace(
+    //     '#include <worldpos_vertex>',
+    //     worldposReplace
+    //   );
+
+    //   shader.fragmentShader = shader.fragmentShader.replace(
+    //     '#include <envmap_physical_pars_fragment>',
+    //     envmapPhysicalParsReplace
+    //   );
+    // };
     mat.side = THREE.DoubleSide;
-    mat.metalness = 100;
+    mat.metalness = 10;
     mat.roughness = 0;
     mat.color = new THREE.Color(0xffffff);
     mat.envMap = cubeRenderTarget.texture;
     mat.envMapIntensity = 10;
     mat.needsUpdate = true;
-
+    scene.add(sphereMesh);
+    sphereMesh.position.set(0, init, 0);
     // objects[0].visible = false;
   }
-  sphereMesh.position.y -= 0.98 * velocity;
-  if (sphereMesh.position.y <= 14) {
-    sphereMesh.position.y = 60;
-    velocity = 0;
+  if (objects[3]) {
+    sphereMesh.position.y += 9.8 * velocity * dir;
+    if (sphereMesh.position.y <= 17) {
+      init = (init * 2) / 3;
+      dir = 0.1;
+      sphereMesh.position.y = init;
+      if (init < 60) {
+        sphereMesh.position.y = 60;
+        velocity = 0;
+      }
+    } else if (sphereMesh.position.y >= init) {
+      dir = -1;
+    }
   }
+  spotLights[0].target.position.z += Math.cos(theta) * 10;
+  spotLights[1].target.position.z += Math.cos(theta) * 10;
+  theta += 0.01;
+
   cubeCamera.update(renderer, scene);
   envManager.render();
 }
-
 animate();
