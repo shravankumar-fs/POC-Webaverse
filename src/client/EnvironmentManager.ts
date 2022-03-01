@@ -49,6 +49,7 @@ export class EnvironmentManager {
   initRenderer() {
     this._renderer = new THREE.WebGLRenderer({ antialias: true });
     this._renderer.setSize(window.innerWidth, window.innerHeight);
+    this._renderer.shadowMap.enabled = true;
     this._renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   }
 
