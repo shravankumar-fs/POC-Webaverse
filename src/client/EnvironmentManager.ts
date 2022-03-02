@@ -33,8 +33,6 @@ export class EnvironmentManager {
       'resources/background/posz.jpg',
       'resources/background/negz.jpg',
     ];
-    // let loader = new THREE.CubeTextureLoader();
-    // this._scene.background = loader.load(urls);
     let materialArray = urls.map((url) => {
       return new THREE.MeshStandardMaterial({
         map: new THREE.TextureLoader().load(url),

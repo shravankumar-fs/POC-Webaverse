@@ -4,6 +4,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader';
 import { GUI } from 'dat.gui';
+import { SphereBufferGeometry } from 'three';
 
 let envManager = new EnvironmentManager();
 let scene = envManager.scene;
@@ -174,7 +175,7 @@ const cubeRenderTarget = new THREE.WebGLCubeRenderTarget(1024, {
 });
 let cubeCamera = new THREE.CubeCamera(0.1, 10000, cubeRenderTarget);
 cubeCamera.position.set(0, 30, 0);
-// scene.add(cubeCamera);
+scene.add(cubeCamera);
 let geo = new THREE.SphereBufferGeometry(30, 100, 100);
 let mat1 = new THREE.MeshBasicMaterial({
   color: 0xffffff,
