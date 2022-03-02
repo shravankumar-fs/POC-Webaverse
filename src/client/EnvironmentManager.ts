@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { BoxBufferGeometry, MeshBasicMaterial } from 'three';
 
 export class EnvironmentManager {
   private _scene!: THREE.Scene;
@@ -32,8 +33,18 @@ export class EnvironmentManager {
       'resources/background/posz.jpg',
       'resources/background/negz.jpg',
     ];
-    let loader = new THREE.CubeTextureLoader();
-    this._scene.background = loader.load(urls);
+    // let loader = new THREE.CubeTextureLoader();
+    // this._scene.background = loader.load(urls);
+    let materialArray = urls.map((url) => {
+      return new THREE.MeshStandardMaterial({
+        map: new THREE.TextureLoader().load(url),
+        side: THREE.DoubleSide,
+      });
+    });
+    let boxgeo = new THREE.BoxBufferGeometry(2000, 2000, 2000);
+    let box = new THREE.Mesh(boxgeo, materialArray);
+    box.position.y = 300;
+    this._scene.add(box);
   }
 
   initCamera() {
@@ -47,10 +58,11 @@ export class EnvironmentManager {
   }
 
   initRenderer() {
-    this._renderer = new THREE.WebGLRenderer({ antialias: true });
+    this._renderer = new THREE.WebGL1Renderer({ alpha: true, antialias: true });
     this._renderer.setSize(window.innerWidth, window.innerHeight);
     this._renderer.shadowMap.enabled = true;
     this._renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this._renderer.physicallyCorrectLights = true;
   }
 
   onWindowResize() {

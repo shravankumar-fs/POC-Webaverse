@@ -10,39 +10,41 @@ let scene = envManager.scene;
 let renderer = envManager.renderer;
 let camera = envManager.camera;
 
-let lights: THREE.PointLight[] = [];
+let lights: THREE.Light[] = [];
 
-for (let i = 0; i < 2; i++) {
-  const light = new THREE.PointLight(0xdffff0, 4);
-  light.castShadow = true;
-  light.shadow.bias = -0.003;
-  light.shadow.mapSize.height = 2048;
-  light.shadow.mapSize.width = 2048;
-  light.shadow.camera.near = 0.5;
-  light.shadow.camera.far = 2000;
-  scene.add(light);
-  lights.push(light);
-}
+const bulb = new THREE.PointLight(0xdfff60, 10, 2000);
+bulb.castShadow = true;
+bulb.power = 10000;
+bulb.shadow.bias = -0.003;
+bulb.shadow.mapSize.height = 2048;
+bulb.shadow.mapSize.width = 2048;
+bulb.shadow.camera.near = 0.5;
+bulb.shadow.camera.far = 2000;
+scene.add(bulb);
+lights.push(bulb);
+bulb.position.set(0, 200, 0);
 
-let lightx = 1000,
-  lighty = 800,
-  lightz = 800;
-lights[0].intensity = 1.5;
-lights[0].position.set(0, 180, 0);
-// lights[1].position.set(-lightx, lighty / 4, 0);
-lights[1].position.set(lightx, lighty / 2, 0);
-// lights[0].intensity = 2;
-// lights[1].intensity = 2;
+const sun = new THREE.AmbientLight(0xffffa0, 4);
+scene.add(sun);
+lights.push(sun);
+sun.position.set(0, 1900, 0);
 
 let spotLights: THREE.SpotLight[] = [];
 for (let i = 0; i < 2; i++) {
-  const light = new THREE.SpotLight(i % 2 ? 0xffff10 : 0x10ffff, 3, 1000, 1, 0);
+  const light = new THREE.SpotLight(
+    i % 2 ? 0xffff10 : 0x10ffff,
+    3,
+    1000,
+    1,
+    0.1
+  );
   light.castShadow = true;
-  light.shadow.bias = -0.003;
+  light.power = 10000;
+  light.shadow.bias = -0.03;
   light.shadow.mapSize.height = 2048;
   light.shadow.mapSize.width = 2048;
   light.shadow.camera.near = 0.1;
-  light.shadow.camera.far = 2000;
+  light.shadow.camera.far = 1000;
   // scene.add(light);
   spotLights.push(light);
 
@@ -55,23 +57,25 @@ for (let i = 0; i < 2; i++) {
 spotLights[0].position.set(0, 200, 400);
 spotLights[1].position.set(0, 200, -400);
 
-let lightToggle = {
+let guiprops = {
   lightsOn: true,
   addWindows: false,
+  toggleCubeCamera: false,
 };
 const gui = new GUI();
 gui
-  .add(lightToggle, 'lightsOn')
-  .name('Its morning')
+  .add(guiprops, 'lightsOn')
+  .name('Its Morning :) ')
   .onChange(() => toggleLights());
+gui.add(guiprops, 'toggleCubeCamera').name('Move SphereCam');
 gui
-  .add(lightToggle, 'addWindows')
+  .add(guiprops, 'addWindows')
   .name('Close windows')
   .onChange(() => toggleWindows());
 gui.open();
 
 function toggleLights(): void {
-  if (lightToggle.lightsOn) {
+  if (guiprops.lightsOn) {
     lights.forEach((item) => scene.add(item));
     spotLights.forEach((item) => scene.remove(scene.getObjectById(item.id)!));
   } else {
@@ -164,19 +168,19 @@ let itemUpdated = false;
 document.body.appendChild(renderer.domElement);
 window.addEventListener('resize', () => envManager.onWindowResize(), false);
 
-const cubeRenderTarget = new THREE.WebGLCubeRenderTarget(256, {
+const cubeRenderTarget = new THREE.WebGLCubeRenderTarget(1024, {
   generateMipmaps: true,
   minFilter: THREE.LinearMipmapLinearFilter,
 });
-let cubeCamera = new THREE.CubeCamera(1, 10000, cubeRenderTarget);
+let cubeCamera = new THREE.CubeCamera(0.1, 10000, cubeRenderTarget);
 cubeCamera.position.set(0, 30, 0);
 // scene.add(cubeCamera);
 let geo = new THREE.SphereBufferGeometry(30, 100, 100);
 let mat1 = new THREE.MeshBasicMaterial({
   color: 0xffffff,
   envMap: cubeRenderTarget.texture,
+  reflectivity: 1,
 });
-geo.computeBoundingBox();
 let sphereMesh = new THREE.Mesh(geo, mat1);
 sphereMesh.castShadow = true;
 sphereMesh.receiveShadow = true;
@@ -189,15 +193,8 @@ let theta = 0;
 function animate() {
   requestAnimationFrame(animate);
   controls.update();
+  if (guiprops.toggleCubeCamera) moveCubeCamera();
 
-  cubeCamera.position.y += 0.1;
-  if (cubeCamera.position.y >= 100) {
-    cubeCamera.position.y = 30;
-  }
-  // cubeCamera.position.x += 0.1;
-  // if (cubeCamera.position.x >= 70) {
-  //   cubeCamera.position.x = 0;
-  // }
   let item = objects[3];
 
   if (item && !itemUpdated) {
@@ -226,14 +223,15 @@ function animate() {
     //   );
     // };
     mat.side = THREE.DoubleSide;
-    mat.metalness = 10;
-    mat.roughness = 0;
     mat.color = new THREE.Color(0xffffff);
     mat.envMap = cubeRenderTarget.texture;
     mat.envMapIntensity = 10;
+    mat.metalness = 2;
+    mat.roughness = 1;
+    // mat.emissive
     mat.needsUpdate = true;
     scene.add(sphereMesh);
-    sphereMesh.position.set(0, init, 0);
+    // sphereMesh.position.set(0, init, -300);
     // objects[0].visible = false;
   }
   if (objects[3]) {
@@ -258,3 +256,10 @@ function animate() {
   envManager.render();
 }
 animate();
+// let dircam = 1;/
+function moveCubeCamera() {
+  cubeCamera.position.y += 0.5;
+  if (cubeCamera.position.y >= 200) {
+    cubeCamera.position.y = 10;
+  }
+}
